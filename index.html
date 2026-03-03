@@ -8,8 +8,10 @@
 </head>
 
 <body>
-  <!-- Animated background -->
-  <div class="bg">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Animated background (decorative) -->
+  <div class="bg" aria-hidden="true">
     <div class="blob b1"></div>
     <div class="blob b2"></div>
     <div class="blob b3"></div>
@@ -18,24 +20,24 @@
 
   <header class="wrap header">
     <div class="brand">
-      <div class="logo" aria-hidden="true">🧳</div>
+      <div class="logo" role="img" aria-label="Suitcase icon">🧳</div>
       <div>
         <h1>Trip Packing Helper</h1>
         <p class="sub">Build a clean checklist in seconds — and actually have fun packing.</p>
       </div>
     </div>
 
-    <div class="chips" id="chips"></div>
+    <div class="chips" id="chips" aria-label="Trip summary chips"></div>
   </header>
 
-  <main class="wrap grid">
-    <section class="card">
-      <h2>Trip details</h2>
+  <main id="main" class="wrap grid">
+    <section class="card" aria-labelledby="trip-details-title">
+      <h2 id="trip-details-title">Trip details</h2>
 
       <div class="row">
-        <label>
+        <label for="tripType">
           Trip type
-          <select id="tripType">
+          <select id="tripType" name="tripType">
             <option value="city">City / Casual</option>
             <option value="beach">Beach</option>
             <option value="cold">Cold / Winter</option>
@@ -44,16 +46,16 @@
           </select>
         </label>
 
-        <label>
+        <label for="days">
           Length (days)
-          <input id="days" type="number" min="1" max="60" value="5" />
+          <input id="days" name="days" type="number" min="1" max="60" value="5" />
         </label>
       </div>
 
       <div class="row">
-        <label>
+        <label for="weather">
           Weather
-          <select id="weather">
+          <select id="weather" name="weather">
             <option value="mixed">Mixed</option>
             <option value="hot">Hot</option>
             <option value="mild">Mild</option>
@@ -62,9 +64,9 @@
           </select>
         </label>
 
-        <label>
+        <label for="luggage">
           Luggage
-          <select id="luggage">
+          <select id="luggage" name="luggage">
             <option value="carryon">Carry-on</option>
             <option value="checked">Checked bag</option>
           </select>
@@ -72,23 +74,24 @@
       </div>
 
       <div class="row">
-        <label class="check">
-          <input id="laundry" type="checkbox" />
+        <label class="check" for="laundry">
+          <input id="laundry" name="laundry" type="checkbox" />
           I can do laundry during the trip
         </label>
 
-        <label class="check">
-          <input id="gym" type="checkbox" />
+        <label class="check" for="gym">
+          <input id="gym" name="gym" type="checkbox" />
           I’ll work out / need gym stuff
         </label>
       </div>
 
       <div class="btnRow">
-        <button id="generate" class="primary glow">
-          <span class="btnIcon">✨</span>
+        <button id="generate" class="primary glow" type="button">
+          <span class="btnIcon" aria-hidden="true">✨</span>
           Generate checklist
         </button>
-        <button id="reset" class="ghost" title="Clears saved checklist">
+
+        <button id="reset" class="ghost" type="button" title="Clears saved checklist">
           Reset
         </button>
       </div>
@@ -97,41 +100,43 @@
 
       <h3>Custom add</h3>
       <div class="row">
-        <input id="customText" type="text" placeholder="e.g., camera, retainer, meds..." />
-        <button id="addCustom" class="ghost">Add</button>
+        <label class="srOnly" for="customText">Custom item</label>
+        <input id="customText" name="customText" type="text" placeholder="e.g., camera, retainer, meds..." />
+        <button id="addCustom" class="ghost" type="button">Add</button>
       </div>
 
       <p class="hint">Autosaves on this device. Clean, simple, and fast.</p>
     </section>
 
-    <section class="card">
+    <section class="card" aria-labelledby="checklist-title">
       <div class="topRow">
         <div>
-          <h2>Your checklist</h2>
+          <h2 id="checklist-title">Your checklist</h2>
           <p class="sub2" id="subtitle">Generate your checklist to get started.</p>
         </div>
 
-        <div class="smallRow">
-          <button id="checkAll" class="ghost">Check all</button>
-          <button id="uncheckAll" class="ghost">Uncheck</button>
+        <div class="smallRow" aria-label="Checklist actions">
+          <button id="checkAll" class="ghost" type="button">Check all</button>
+          <button id="uncheckAll" class="ghost" type="button">Uncheck</button>
         </div>
       </div>
 
-      <div id="list" class="list">
+      <div id="list" class="list" aria-live="polite">
         <div class="empty">
-          <p>👆 Enter your trip details and hit <b>Generate</b>.</p>
+          <p>👆 Enter your trip details and hit <strong>Generate</strong>.</p>
         </div>
       </div>
 
       <footer class="foot">
         <span id="count">0 / 0 checked</span>
-        <button id="copy" class="primary">Copy list</button>
+        <button id="copy" class="primary" type="button">Copy list</button>
       </footer>
     </section>
   </main>
 
-  <!-- Confetti -->
-  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+  <canvas id="confetti" class="confetti" aria-hidden="true">
+    Confetti animation canvas
+  </canvas>
 
   <script src="script.js"></script>
 </body>
