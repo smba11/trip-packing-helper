@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
-const STORAGE_KEY = "trip_packing_helper_v2";
+const STORAGE_KEY = "trip_packing_helper_v3";
+
 const confettiCanvas = $("confetti");
 const ctx = confettiCanvas.getContext("2d");
 
@@ -148,21 +149,24 @@ function qty(label, days, laundry) {
   return null;
 }
 
-function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
+function buildChecklist({ tripType, days, weather, luggage, laundry, gym, style, events }) {
   const list = JSON.parse(JSON.stringify(baseTemplates));
 
+  // trip type add-ons
   if (addOns[tripType]) {
     for (const [group, items] of Object.entries(addOns[tripType])) {
       list[group] = (list[group] || []).concat(items);
     }
   }
 
+  // weather add-ons
   if (weatherAdds[weather]) {
     for (const [group, items] of Object.entries(weatherAdds[weather])) {
       list[group] = (list[group] || []).concat(items);
     }
   }
 
+  // gym add-ons
   if (gym) {
     list.clothing = list.clothing.concat([
       ["Gym clothes", "1–2 sets"],
@@ -171,6 +175,22 @@ function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
     list.toiletries = list.toiletries.concat([["Body wash / wipes", ""]]);
   }
 
+  // style + events tweaks
+  if (style === "smart") {
+    list.clothing = list.clothing.concat([["Nice outfit", "At least 1 solid fit"]]);
+  }
+  if (style === "formal") {
+    list.clothing = list.clothing.concat([["Formal outfit", "Match with shoes"]]);
+    list.toiletries = list.toiletries.concat([["Cologne / perfume", "Optional but clutch"]]);
+  }
+  if (events === "one") {
+    list.misc = list.misc.concat([["Special event item", "Gift / reservation info / whatever applies"]]);
+  }
+  if (events === "many") {
+    list.clothing = list.clothing.concat([["Extra nice outfits", "2–3 depending on days"]]);
+  }
+
+  // luggage constraints
   if (luggage === "carryon") {
     list.toiletries = list.toiletries.map(([a, b]) => {
       const lower = a.toLowerCase();
@@ -182,6 +202,7 @@ function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
     list.misc = list.misc.concat([["Quart-size liquids bag", "Carry-on only"]]);
   }
 
+  // attach quantities
   const withQty = {};
   for (const [group, items] of Object.entries(list)) {
     withQty[group] = items.map(([title, note]) => {
@@ -190,6 +211,7 @@ function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
       return { title: titled, note: note || "", checked: false, custom: false };
     });
   }
+
   return withQty;
 }
 
@@ -218,6 +240,8 @@ function ensureState() {
       luggage: "carryon",
       laundry: false,
       gym: false,
+      style: "casual",
+      events: "none",
     },
     checklist: {},
   };
@@ -245,6 +269,30 @@ function groupLabel(group) {
   return map[group] || group;
 }
 
+function renderChips(meta) {
+  const chips = $("chips");
+  if (!chips) return;
+  chips.innerHTML = "";
+
+  const data = [
+    `${emojiByType[meta.tripType] || "🗺️"} ${meta.tripType}`,
+    `${emojiByWeather[meta.weather] || "🌤️"} ${meta.weather}`,
+    `${emojiByLuggage[meta.luggage] || "🎒"} ${meta.luggage}`,
+    meta.laundry ? "🧺 laundry" : "🧼 no laundry",
+    meta.gym ? "🏋️ gym" : "🛋️ no gym",
+    `🗓️ ${meta.days} days`,
+    meta.style ? `👕 ${meta.style}` : "",
+    meta.events ? `🎉 ${meta.events}` : "",
+  ].filter(Boolean);
+
+  data.forEach((t) => {
+    const s = document.createElement("span");
+    s.className = "chip";
+    s.textContent = t;
+    chips.appendChild(s);
+  });
+}
+
 function syncInputsFromState() {
   $("tripType").value = state.meta.tripType;
   $("days").value = state.meta.days;
@@ -252,6 +300,10 @@ function syncInputsFromState() {
   $("luggage").value = state.meta.luggage;
   $("laundry").checked = !!state.meta.laundry;
   $("gym").checked = !!state.meta.gym;
+
+  if ($("style")) $("style").value = state.meta.style || "casual";
+  if ($("events")) $("events").value = state.meta.events || "none";
+
   renderChips(state.meta);
 }
 
@@ -263,26 +315,9 @@ function readMetaFromInputs() {
     luggage: $("luggage").value,
     laundry: $("laundry").checked,
     gym: $("gym").checked,
+    style: $("style") ? $("style").value : "casual",
+    events: $("events") ? $("events").value : "none",
   };
-}
-
-function renderChips(meta) {
-  const chips = $("chips");
-  chips.innerHTML = "";
-  const data = [
-    `${emojiByType[meta.tripType] || "🗺️"} ${meta.tripType}`,
-    `${emojiByWeather[meta.weather] || "🌤️"} ${meta.weather}`,
-    `${emojiByLuggage[meta.luggage] || "🎒"} ${meta.luggage}`,
-    meta.laundry ? "🧺 laundry" : "🧼 no laundry",
-    meta.gym ? "🏋️ gym" : "🛋️ no gym",
-    `🗓️ ${meta.days} days`,
-  ];
-  data.forEach((t) => {
-    const s = document.createElement("span");
-    s.className = "chip";
-    s.textContent = t;
-    chips.appendChild(s);
-  });
 }
 
 function updateSubtitle() {
@@ -307,11 +342,8 @@ function updateCount(state) {
   const { total, checked } = getCounts(state);
   $("count").textContent = `${checked} / ${total} checked`;
 
-  // Trigger confetti when completed all (and only once per completion)
   const completed = total > 0 && checked === total;
-  if (completed && !lastComplete) {
-    blastConfetti();
-  }
+  if (completed && !lastComplete) blastConfetti();
   lastComplete = completed;
 }
 
@@ -321,7 +353,7 @@ function render(state) {
 
   const groups = Object.keys(state.checklist);
   if (!groups.length) {
-    listEl.innerHTML = `<div class="empty"><p>👆 Enter your trip details and hit <b>Generate</b>.</p></div>`;
+    listEl.innerHTML = `<div class="empty"><p>👆 Answer the questions, then hit <strong>Build my checklist</strong>.</p></div>`;
     updateSubtitle();
     updateCount(state);
     return;
@@ -348,7 +380,6 @@ function render(state) {
         state.checklist[group][idx].checked = cb.checked;
         save(state);
 
-        // animate "pop" on click
         row.classList.toggle("checked", cb.checked);
         row.animate(
           [{ transform: "translateY(0px) scale(1)" }, { transform: "translateY(-1px) scale(1.02)" }, { transform: "translateY(0px) scale(1)" }],
@@ -385,7 +416,6 @@ $("generate").addEventListener("click", () => {
   state.checklist = buildChecklist(state.meta);
   save(state);
 
-  // small "generate" animation
   $("generate").animate(
     [{ transform: "translateY(0px)" }, { transform: "translateY(-2px)" }, { transform: "translateY(0px)" }],
     { duration: 220, easing: "ease-out" }
@@ -432,7 +462,7 @@ $("uncheckAll").addEventListener("click", () => {
 $("copy").addEventListener("click", async () => {
   const lines = [];
   lines.push(`Trip Packing Checklist`);
-  lines.push(`Type: ${state.meta.tripType} | Days: ${state.meta.days} | Weather: ${state.meta.weather} | Luggage: ${state.meta.luggage}`);
+  lines.push(`Type: ${state.meta.tripType} | Days: ${state.meta.days} | Weather: ${state.meta.weather} | Luggage: ${state.meta.luggage} | Style: ${state.meta.style} | Events: ${state.meta.events}`);
   lines.push("");
 
   for (const [group, items] of Object.entries(state.checklist)) {
@@ -460,21 +490,19 @@ window.addEventListener("resize", resizeConfetti);
 resizeConfetti();
 
 function blastConfetti() {
-  // Respect reduced motion
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   confettiCanvas.classList.add("show");
 
   const count = 160;
   confettiParticles = Array.from({ length: count }, () => createParticle());
+
   if (!confettiRunning) {
     confettiRunning = true;
     requestAnimationFrame(tickConfetti);
   }
 
-  setTimeout(() => {
-    confettiCanvas.classList.remove("show");
-  }, 1200);
+  setTimeout(() => confettiCanvas.classList.remove("show"), 1200);
 }
 
 function createParticle() {
@@ -499,7 +527,7 @@ function tickConfetti() {
     p.x += p.vx;
     p.y += p.vy;
     p.rot += p.vr;
-    p.vy += 0.06; // gravity
+    p.vy += 0.06;
     p.life -= 1;
 
     ctx.save();
