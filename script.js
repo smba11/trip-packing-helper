@@ -1,6 +1,33 @@
 const $ = (id) => document.getElementById(id);
 
-const STORAGE_KEY = "trip_packing_helper_v1";
+const STORAGE_KEY = "trip_packing_helper_v2";
+const confettiCanvas = $("confetti");
+const ctx = confettiCanvas.getContext("2d");
+
+let confettiParticles = [];
+let confettiRunning = false;
+let lastComplete = false;
+
+const emojiByType = {
+  city: "🏙️",
+  beach: "🏖️",
+  cold: "❄️",
+  hiking: "🥾",
+  business: "💼",
+};
+
+const emojiByWeather = {
+  mixed: "🌤️",
+  hot: "☀️",
+  mild: "🌿",
+  cold: "🧊",
+  rainy: "🌧️",
+};
+
+const emojiByLuggage = {
+  carryon: "🎒",
+  checked: "🧳",
+};
 
 const baseTemplates = {
   essentials: [
@@ -93,30 +120,19 @@ const addOns = {
 
 const weatherAdds = {
   rainy: {
-    essentials: [
-      ["Umbrella", ""],
-    ],
-    clothing: [
-      ["Waterproof jacket", ""],
-    ],
+    essentials: [["Umbrella", ""]],
+    clothing: [["Waterproof jacket", ""]],
   },
   hot: {
-    toiletries: [
-      ["Extra deodorant / body wipes", ""],
-    ],
-    clothing: [
-      ["Breathable layers", ""],
-    ],
+    toiletries: [["Extra deodorant / body wipes", ""]],
+    clothing: [["Breathable layers", ""]],
   },
   cold: {
-    clothing: [
-      ["Extra warm socks", ""],
-    ],
+    clothing: [["Extra warm socks", ""]],
   },
 };
 
 function qty(label, days, laundry) {
-  // simple quantity rules (tweakable)
   const d = Math.max(1, Number(days) || 1);
   const effectiveDays = laundry ? Math.ceil(d / 2) : d;
 
@@ -135,32 +151,26 @@ function qty(label, days, laundry) {
 function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
   const list = JSON.parse(JSON.stringify(baseTemplates));
 
-  // trip-type add-ons
   if (addOns[tripType]) {
     for (const [group, items] of Object.entries(addOns[tripType])) {
       list[group] = (list[group] || []).concat(items);
     }
   }
 
-  // weather add-ons
   if (weatherAdds[weather]) {
     for (const [group, items] of Object.entries(weatherAdds[weather])) {
       list[group] = (list[group] || []).concat(items);
     }
   }
 
-  // gym add-ons
   if (gym) {
     list.clothing = list.clothing.concat([
       ["Gym clothes", "1–2 sets"],
       ["Gym shoes (if different)", ""],
     ]);
-    list.toiletries = list.toiletries.concat([
-      ["Body wash / wipes", ""],
-    ]);
+    list.toiletries = list.toiletries.concat([["Body wash / wipes", ""]]);
   }
 
-  // luggage constraints
   if (luggage === "carryon") {
     list.toiletries = list.toiletries.map(([a, b]) => {
       const lower = a.toLowerCase();
@@ -169,12 +179,9 @@ function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
       }
       return [a, b];
     });
-    list.misc = list.misc.concat([
-      ["Quart-size liquids bag", "Carry-on only"],
-    ]);
+    list.misc = list.misc.concat([["Quart-size liquids bag", "Carry-on only"]]);
   }
 
-  // attach quantities to clothing-like items
   const withQty = {};
   for (const [group, items] of Object.entries(list)) {
     withQty[group] = items.map(([title, note]) => {
@@ -183,13 +190,13 @@ function buildChecklist({ tripType, days, weather, luggage, laundry, gym }) {
       return { title: titled, note: note || "", checked: false, custom: false };
     });
   }
-
   return withQty;
 }
 
 function save(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
+
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -197,75 +204,6 @@ function load() {
   } catch {
     return null;
   }
-}
-
-function render(state) {
-  const listEl = $("list");
-  listEl.innerHTML = "";
-
-  const groups = Object.keys(state.checklist);
-  if (!groups.length) {
-    listEl.innerHTML = `<div class="empty"><p>No items yet.</p></div>`;
-    updateCount(state);
-    return;
-  }
-
-  for (const group of groups) {
-    const box = document.createElement("div");
-    box.className = "group";
-
-    const header = document.createElement("div");
-    header.className = "groupTitle";
-    header.innerHTML = `<span>${group}</span><span>${state.checklist[group].length} items</span>`;
-    box.appendChild(header);
-
-    state.checklist[group].forEach((item, idx) => {
-      const row = document.createElement("label");
-      row.className = "item";
-
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = !!item.checked;
-      cb.addEventListener("change", () => {
-        state.checklist[group][idx].checked = cb.checked;
-        save(state);
-        updateCount(state);
-      });
-
-      const text = document.createElement("div");
-      text.className = "itemText";
-      text.innerHTML = `
-        <div class="main">${escapeHtml(item.title)}</div>
-        ${item.note ? `<div class="sub">${escapeHtml(item.note)}</div>` : ""}
-      `;
-
-      row.appendChild(cb);
-      row.appendChild(text);
-      box.appendChild(row);
-    });
-
-    listEl.appendChild(box);
-  }
-
-  updateCount(state);
-}
-
-function updateCount(state) {
-  let total = 0, checked = 0;
-  for (const items of Object.values(state.checklist)) {
-    total += items.length;
-    checked += items.filter(i => i.checked).length;
-  }
-  $("count").textContent = `${checked} / ${total} checked`;
-}
-
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function ensureState() {
@@ -287,7 +225,26 @@ function ensureState() {
 
 let state = ensureState();
 
-// hydrate UI from saved meta
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function groupLabel(group) {
+  const map = {
+    essentials: "Essentials",
+    clothing: "Clothing",
+    toiletries: "Toiletries",
+    tech: "Tech",
+    misc: "Extras",
+  };
+  return map[group] || group;
+}
+
 function syncInputsFromState() {
   $("tripType").value = state.meta.tripType;
   $("days").value = state.meta.days;
@@ -295,6 +252,7 @@ function syncInputsFromState() {
   $("luggage").value = state.meta.luggage;
   $("laundry").checked = !!state.meta.laundry;
   $("gym").checked = !!state.meta.gym;
+  renderChips(state.meta);
 }
 
 function readMetaFromInputs() {
@@ -308,10 +266,131 @@ function readMetaFromInputs() {
   };
 }
 
+function renderChips(meta) {
+  const chips = $("chips");
+  chips.innerHTML = "";
+  const data = [
+    `${emojiByType[meta.tripType] || "🗺️"} ${meta.tripType}`,
+    `${emojiByWeather[meta.weather] || "🌤️"} ${meta.weather}`,
+    `${emojiByLuggage[meta.luggage] || "🎒"} ${meta.luggage}`,
+    meta.laundry ? "🧺 laundry" : "🧼 no laundry",
+    meta.gym ? "🏋️ gym" : "🛋️ no gym",
+    `🗓️ ${meta.days} days`,
+  ];
+  data.forEach((t) => {
+    const s = document.createElement("span");
+    s.className = "chip";
+    s.textContent = t;
+    chips.appendChild(s);
+  });
+}
+
+function updateSubtitle() {
+  const total = getCounts(state).total;
+  if (!total) {
+    $("subtitle").textContent = "Generate your checklist to get started.";
+    return;
+  }
+  $("subtitle").textContent = "Tap items as you pack — you’ll feel the progress.";
+}
+
+function getCounts(state) {
+  let total = 0, checked = 0;
+  for (const items of Object.values(state.checklist)) {
+    total += items.length;
+    checked += items.filter(i => i.checked).length;
+  }
+  return { total, checked };
+}
+
+function updateCount(state) {
+  const { total, checked } = getCounts(state);
+  $("count").textContent = `${checked} / ${total} checked`;
+
+  // Trigger confetti when completed all (and only once per completion)
+  const completed = total > 0 && checked === total;
+  if (completed && !lastComplete) {
+    blastConfetti();
+  }
+  lastComplete = completed;
+}
+
+function render(state) {
+  const listEl = $("list");
+  listEl.innerHTML = "";
+
+  const groups = Object.keys(state.checklist);
+  if (!groups.length) {
+    listEl.innerHTML = `<div class="empty"><p>👆 Enter your trip details and hit <b>Generate</b>.</p></div>`;
+    updateSubtitle();
+    updateCount(state);
+    return;
+  }
+
+  for (const group of groups) {
+    const box = document.createElement("div");
+    box.className = "group";
+
+    const header = document.createElement("div");
+    header.className = "groupTitle";
+    header.innerHTML = `<span>${escapeHtml(groupLabel(group))}</span><span class="badge">${state.checklist[group].length} items</span>`;
+    box.appendChild(header);
+
+    state.checklist[group].forEach((item, idx) => {
+      const row = document.createElement("label");
+      row.className = "item" + (item.checked ? " checked" : "");
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!item.checked;
+
+      cb.addEventListener("change", () => {
+        state.checklist[group][idx].checked = cb.checked;
+        save(state);
+
+        // animate "pop" on click
+        row.classList.toggle("checked", cb.checked);
+        row.animate(
+          [{ transform: "translateY(0px) scale(1)" }, { transform: "translateY(-1px) scale(1.02)" }, { transform: "translateY(0px) scale(1)" }],
+          { duration: 180, easing: "ease-out" }
+        );
+
+        updateCount(state);
+      });
+
+      const text = document.createElement("div");
+      text.className = "itemText";
+      text.innerHTML = `
+        <div class="main">${escapeHtml(item.title)}</div>
+        ${item.note ? `<div class="sub">${escapeHtml(item.note)}</div>` : ""}
+      `;
+
+      row.appendChild(cb);
+      row.appendChild(text);
+      box.appendChild(row);
+    });
+
+    listEl.appendChild(box);
+  }
+
+  updateSubtitle();
+  updateCount(state);
+}
+
+/* ===== Buttons ===== */
 $("generate").addEventListener("click", () => {
   state.meta = readMetaFromInputs();
+  renderChips(state.meta);
+
   state.checklist = buildChecklist(state.meta);
   save(state);
+
+  // small "generate" animation
+  $("generate").animate(
+    [{ transform: "translateY(0px)" }, { transform: "translateY(-2px)" }, { transform: "translateY(0px)" }],
+    { duration: 220, easing: "ease-out" }
+  );
+
   render(state);
 });
 
@@ -326,7 +405,6 @@ $("addCustom").addEventListener("click", () => {
   const text = $("customText").value.trim();
   if (!text) return;
 
-  // put custom items in essentials by default
   state.checklist.essentials = state.checklist.essentials || [];
   state.checklist.essentials.unshift({ title: text, note: "Custom", checked: false, custom: true });
 
@@ -358,7 +436,7 @@ $("copy").addEventListener("click", async () => {
   lines.push("");
 
   for (const [group, items] of Object.entries(state.checklist)) {
-    lines.push(group.toUpperCase());
+    lines.push(groupLabel(group).toUpperCase());
     items.forEach(i => lines.push(`${i.checked ? "[x]" : "[ ]"} ${i.title}${i.note ? " — " + i.note : ""}`));
     lines.push("");
   }
@@ -373,6 +451,75 @@ $("copy").addEventListener("click", async () => {
   }
 });
 
-// initial render
+/* ===== Confetti ===== */
+function resizeConfetti() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeConfetti);
+resizeConfetti();
+
+function blastConfetti() {
+  // Respect reduced motion
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  confettiCanvas.classList.add("show");
+
+  const count = 160;
+  confettiParticles = Array.from({ length: count }, () => createParticle());
+  if (!confettiRunning) {
+    confettiRunning = true;
+    requestAnimationFrame(tickConfetti);
+  }
+
+  setTimeout(() => {
+    confettiCanvas.classList.remove("show");
+  }, 1200);
+}
+
+function createParticle() {
+  const colors = ["#7c5cff", "#4e8cff", "#2ee6a6", "#ff5cc3", "#ffe66d"];
+  return {
+    x: Math.random() * confettiCanvas.width,
+    y: -20 - Math.random() * 200,
+    r: 2 + Math.random() * 4,
+    vx: -2 + Math.random() * 4,
+    vy: 2 + Math.random() * 5,
+    rot: Math.random() * Math.PI,
+    vr: -0.2 + Math.random() * 0.4,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    life: 60 + Math.floor(Math.random() * 40),
+  };
+}
+
+function tickConfetti() {
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+  confettiParticles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vr;
+    p.vy += 0.06; // gravity
+    p.life -= 1;
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.r, -p.r, p.r * 2.2, p.r * 1.2);
+    ctx.restore();
+  });
+
+  confettiParticles = confettiParticles.filter(p => p.life > 0 && p.y < confettiCanvas.height + 40);
+
+  if (confettiParticles.length > 0) {
+    requestAnimationFrame(tickConfetti);
+  } else {
+    confettiRunning = false;
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  }
+}
+
+/* ===== Init ===== */
 syncInputsFromState();
 render(state);
