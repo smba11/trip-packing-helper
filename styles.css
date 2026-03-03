@@ -1,3 +1,23 @@
+.skip{
+  position:absolute;
+  left:-999px;
+  top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background: rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.18);
+  color: #eef2ff;
+  z-index: 100;
+}
+.skip:focus{left:10px}
+
+.srOnly{
+  position:absolute;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;border:0;
+}
 :root{
   --bg:#070913;
   --card: rgba(15, 18, 35, 0.72);
