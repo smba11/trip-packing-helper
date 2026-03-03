@@ -6,10 +6,26 @@
   <title>Trip Packing Helper</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <header class="wrap">
-    <h1>Trip Packing Helper</h1>
-    <p class="sub">Tell it your trip details → get a smart checklist you can check off.</p>
+  <!-- Animated background -->
+  <div class="bg">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="noise"></div>
+  </div>
+
+  <header class="wrap header">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">🧳</div>
+      <div>
+        <h1>Trip Packing Helper</h1>
+        <p class="sub">Build a clean checklist in seconds — and actually have fun packing.</p>
+      </div>
+    </div>
+
+    <div class="chips" id="chips"></div>
   </header>
 
   <main class="wrap grid">
@@ -68,23 +84,33 @@
       </div>
 
       <div class="btnRow">
-        <button id="generate" class="primary">Generate checklist</button>
-        <button id="reset" class="ghost" title="Clears saved checklist">Reset</button>
+        <button id="generate" class="primary glow">
+          <span class="btnIcon">✨</span>
+          Generate checklist
+        </button>
+        <button id="reset" class="ghost" title="Clears saved checklist">
+          Reset
+        </button>
       </div>
 
       <hr class="sep" />
 
-      <h3>Add custom item</h3>
+      <h3>Custom add</h3>
       <div class="row">
         <input id="customText" type="text" placeholder="e.g., camera, retainer, meds..." />
         <button id="addCustom" class="ghost">Add</button>
       </div>
-      <p class="hint">Your checklist saves automatically on this device.</p>
+
+      <p class="hint">Autosaves on this device. Clean, simple, and fast.</p>
     </section>
 
     <section class="card">
       <div class="topRow">
-        <h2>Your checklist</h2>
+        <div>
+          <h2>Your checklist</h2>
+          <p class="sub2" id="subtitle">Generate your checklist to get started.</p>
+        </div>
+
         <div class="smallRow">
           <button id="checkAll" class="ghost">Check all</button>
           <button id="uncheckAll" class="ghost">Uncheck</button>
@@ -93,7 +119,7 @@
 
       <div id="list" class="list">
         <div class="empty">
-          <p>Generate your checklist to get started.</p>
+          <p>👆 Enter your trip details and hit <b>Generate</b>.</p>
         </div>
       </div>
 
@@ -103,6 +129,9 @@
       </footer>
     </section>
   </main>
+
+  <!-- Confetti -->
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
   <script src="script.js"></script>
 </body>
