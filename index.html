@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trip Packing Helper</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="wrap">
+    <h1>Trip Packing Helper</h1>
+    <p class="sub">Tell it your trip details → get a smart checklist you can check off.</p>
+  </header>
+
+  <main class="wrap grid">
+    <section class="card">
+      <h2>Trip details</h2>
+
+      <div class="row">
+        <label>
+          Trip type
+          <select id="tripType">
+            <option value="city">City / Casual</option>
+            <option value="beach">Beach</option>
+            <option value="cold">Cold / Winter</option>
+            <option value="hiking">Hiking / Outdoors</option>
+            <option value="business">Business</option>
+          </select>
+        </label>
+
+        <label>
+          Length (days)
+          <input id="days" type="number" min="1" max="60" value="5" />
+        </label>
+      </div>
+
+      <div class="row">
+        <label>
+          Weather
+          <select id="weather">
+            <option value="mixed">Mixed</option>
+            <option value="hot">Hot</option>
+            <option value="mild">Mild</option>
+            <option value="cold">Cold</option>
+            <option value="rainy">Rainy</option>
+          </select>
+        </label>
+
+        <label>
+          Luggage
+          <select id="luggage">
+            <option value="carryon">Carry-on</option>
+            <option value="checked">Checked bag</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row">
+        <label class="check">
+          <input id="laundry" type="checkbox" />
+          I can do laundry during the trip
+        </label>
+
+        <label class="check">
+          <input id="gym" type="checkbox" />
+          I’ll work out / need gym stuff
+        </label>
+      </div>
+
+      <div class="btnRow">
+        <button id="generate" class="primary">Generate checklist</button>
+        <button id="reset" class="ghost" title="Clears saved checklist">Reset</button>
+      </div>
+
+      <hr class="sep" />
+
+      <h3>Add custom item</h3>
+      <div class="row">
+        <input id="customText" type="text" placeholder="e.g., camera, retainer, meds..." />
+        <button id="addCustom" class="ghost">Add</button>
+      </div>
+      <p class="hint">Your checklist saves automatically on this device.</p>
+    </section>
+
+    <section class="card">
+      <div class="topRow">
+        <h2>Your checklist</h2>
+        <div class="smallRow">
+          <button id="checkAll" class="ghost">Check all</button>
+          <button id="uncheckAll" class="ghost">Uncheck</button>
+        </div>
+      </div>
+
+      <div id="list" class="list">
+        <div class="empty">
+          <p>Generate your checklist to get started.</p>
+        </div>
+      </div>
+
+      <footer class="foot">
+        <span id="count">0 / 0 checked</span>
+        <button id="copy" class="primary">Copy list</button>
+      </footer>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
